@@ -147,7 +147,10 @@ class Salesforce(object):
 
         * name -- the name of a Salesforce object type, e.g. Lead or Contact
         """
-        return SFType(name, self.session_id, self.sf_instance, self.sf_version, self.proxies)
+        try:
+            return super(Salesforce, self).__getattr__(name)
+        except AttributeError:
+            return SFType(name, self.session_id, self.sf_instance, self.sf_version, self.proxies)
 
     # User utlity methods
     def set_password(self, user, password):
@@ -170,11 +173,14 @@ class Salesforce(object):
         # salesforce return 204 No Content when the request is successful
         if result.status_code != 200 and result.status_code != 204:
             raise SalesforceGeneralError(result.content)
-        json_result = result.json(object_pairs_hook=OrderedDict)
-        if len(json_result) == 0:
+        try:
+            json_result = result.json(object_pairs_hook=OrderedDict)
+            if len(json_result) == 0:
+                return None
+            else:
+                return json_result
+        except ValueError:
             return None
-        else:
-            return json_result
 
     def setPassword(self, user, password):
         import warnings
